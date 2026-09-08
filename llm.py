@@ -18,7 +18,6 @@ def is_streamlit_cloud():
     try:
         import streamlit as st
 
-        # Streamlit Cloud provides secrets.
         return "LLM_PROVIDER" in st.secrets
     except Exception:
         return False
@@ -26,7 +25,6 @@ def is_streamlit_cloud():
 
 def chat(messages):
 
-    # Use cloud automatically when Streamlit secrets are available.
     if is_streamlit_cloud():
         provider = "cloud"
     else:
