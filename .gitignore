@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+
+.streamlit/secrets.toml
+
+.env
+.env.*
+
+vector_db/
+data/metadata.json
+
+*.log
