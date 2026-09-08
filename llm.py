@@ -14,11 +14,30 @@ def get_setting(name, default=None):
     return os.getenv(name, default)
 
 
+def is_streamlit_cloud():
+    try:
+        import streamlit as st
+
+        # Streamlit Cloud provides secrets.
+        return "LLM_PROVIDER" in st.secrets
+    except Exception:
+        return False
+
+
 def chat(messages):
-    provider = get_setting("LLM_PROVIDER", "local")
+
+    # Use cloud automatically when Streamlit secrets are available.
+    if is_streamlit_cloud():
+        provider = "cloud"
+    else:
+        provider = get_setting("LLM_PROVIDER", "local")
 
     if provider.lower() == "local":
-        model = get_setting("OLLAMA_MODEL", "llama3.2")
+
+        model = get_setting(
+            "OLLAMA_MODEL",
+            "llama3.2"
+        )
 
         return ollama.chat(
             model=model,
@@ -26,6 +45,7 @@ def chat(messages):
         )
 
     if provider.lower() == "cloud":
+
         api_key = get_setting("OLLAMA_API_KEY")
 
         if not api_key:
