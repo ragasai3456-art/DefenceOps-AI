@@ -1,4 +1,5 @@
 import os
+import time
 
 from google import genai
 
@@ -25,8 +26,6 @@ def chat(messages):
 
     client = genai.Client(api_key=api_key)
 
-    # Convert the existing message format
-    # used by our agent into one prompt.
     prompt_parts = []
 
     for message in messages:
@@ -44,13 +43,39 @@ def chat(messages):
 
     prompt = "\n\n".join(prompt_parts)
 
-    response = client.models.generate_content(
-        model="gemini-3.8-flash",
-        contents=prompt
-    )
+    models = [
+        "gemini-3.8-flash",
+        "gemini-3.7-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash-lite",
+    ]
 
-    return {
-        "message": {
-            "content": response.text
-        }
-    }
+    last_error = None
+
+    for model in models:
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt
+            )
+
+            return {
+                "message": {
+                    "content": response.text
+                }
+            }
+
+        except Exception as error:
+            last_error = error
+
+            # Try the next model if this model is temporarily unavailable
+            if "503" in str(error) or "UNAVAILABLE" in str(error):
+                time.sleep(1)
+                continue
+
+            raise error
+
+    raise RuntimeError(
+        f"All Gemini models are temporarily unavailable. "
+        f"Last error: {last_error}"
+    )
