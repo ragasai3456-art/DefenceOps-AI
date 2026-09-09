@@ -1,6 +1,3 @@
-import ollama
-
-
 def route_question(question):
 
     prompt = f"""
