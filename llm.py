@@ -14,43 +14,14 @@ def get_setting(name, default=None):
     return os.getenv(name, default)
 
 
-def is_streamlit_cloud():
-    try:
-        import streamlit as st
-
-        return "LLM_PROVIDER" in st.secrets
-    except Exception:
-        return False
-
-
 def chat(messages):
 
-    if is_streamlit_cloud():
-        provider = "cloud"
-    else:
-        provider = get_setting("LLM_PROVIDER", "local")
+    # If an Ollama API key exists, always use Ollama Cloud.
+    # This prevents Streamlit Cloud from accidentally
+    # falling back to a local Ollama installation.
+    api_key = get_setting("OLLAMA_API_KEY")
 
-    if provider.lower() == "local":
-
-        model = get_setting(
-            "OLLAMA_MODEL",
-            "llama3.2"
-        )
-
-        return ollama.chat(
-            model=model,
-            messages=messages
-        )
-
-    if provider.lower() == "cloud":
-
-        api_key = get_setting("OLLAMA_API_KEY")
-
-        if not api_key:
-            raise RuntimeError(
-                "OLLAMA_API_KEY is not configured."
-            )
-
+    if api_key:
         model = get_setting(
             "OLLAMA_CLOUD_MODEL",
             "gpt-oss:120b"
@@ -68,6 +39,13 @@ def chat(messages):
             messages=messages
         )
 
-    raise RuntimeError(
-        f"Unknown LLM_PROVIDER: {provider}"
+    # No cloud API key means local development.
+    model = get_setting(
+        "OLLAMA_MODEL",
+        "llama3.2"
+    )
+
+    return ollama.chat(
+        model=model,
+        messages=messages
     )
