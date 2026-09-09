@@ -15,17 +15,11 @@ def get_setting(name, default=None):
 
 
 def chat(messages):
-
-    # If an Ollama API key exists, always use Ollama Cloud.
-    # This prevents Streamlit Cloud from accidentally
-    # falling back to a local Ollama installation.
+    # If an Ollama API key exists, use Ollama Cloud.
     api_key = get_setting("OLLAMA_API_KEY")
 
     if api_key:
-        model = get_setting(
-            "OLLAMA_CLOUD_MODEL",
-            "gpt-oss:120b"
-        )
+        model = get_setting("OLLAMA_CLOUD_MODEL", "gpt-oss:120b")
 
         client = ollama.Client(
             host="https://ollama.com",
@@ -39,11 +33,8 @@ def chat(messages):
             messages=messages
         )
 
-    # No cloud API key means local development.
-    model = get_setting(
-        "OLLAMA_MODEL",
-        "llama3.2"
-    )
+    # Otherwise use local Ollama.
+    model = get_setting("OLLAMA_MODEL", "llama3.2")
 
     return ollama.chat(
         model=model,
