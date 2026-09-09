@@ -1,5 +1,6 @@
 import os
-import ollama
+
+from google import genai
 
 
 def get_setting(name, default=None):
@@ -15,34 +16,41 @@ def get_setting(name, default=None):
 
 
 def chat(messages):
-    api_key = get_setting("OLLAMA_API_KEY")
+    api_key = get_setting("GEMINI_API_KEY")
 
-    # Streamlit Cloud / Ollama Cloud
-    if api_key:
-        model = get_setting(
-            "OLLAMA_CLOUD_MODEL",
-            "gpt-oss:120b"
+    if not api_key:
+        raise RuntimeError(
+            "GEMINI_API_KEY is not configured."
         )
 
-        client = ollama.Client(
-            host="https://ollama.com",
-            headers={
-                "Authorization": f"Bearer {api_key}"
-            }
-        )
+    client = genai.Client(api_key=api_key)
 
-        return client.chat(
-            model=model,
-            messages=messages
-        )
+    # Convert the existing message format
+    # used by our agent into one prompt.
+    prompt_parts = []
 
-    # Local development with Ollama
-    model = get_setting(
-        "OLLAMA_MODEL",
-        "llama3.2"
+    for message in messages:
+        role = message.get("role", "user")
+        content = message.get("content", "")
+
+        if role == "system":
+            prompt_parts.append(
+                f"SYSTEM INSTRUCTION:\n{content}"
+            )
+        else:
+            prompt_parts.append(
+                f"USER:\n{content}"
+            )
+
+    prompt = "\n\n".join(prompt_parts)
+
+    response = client.models.generate_content(
+        model="gemini-3.8-flash",
+        contents=prompt
     )
 
-    return ollama.chat(
-        model=model,
-        messages=messages
-    )
+    return {
+        "message": {
+            "content": response.text
+        }
+    }
